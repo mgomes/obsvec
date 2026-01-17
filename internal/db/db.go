@@ -146,58 +146,44 @@ func (db *DB) DeleteDocument(path string) error {
 		return err
 	}
 
-	rows, err := db.conn.Query("SELECT id FROM chunks WHERE doc_id = ?", docID)
+	tx, err := db.conn.Begin()
 	if err != nil {
 		return err
 	}
-	defer rows.Close() //nolint:errcheck
 
-	var chunkIDs []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return err
-		}
-		chunkIDs = append(chunkIDs, id)
-	}
-
-	for _, chunkID := range chunkIDs {
-		if _, err := db.conn.Exec("DELETE FROM vec_chunks WHERE chunk_id = ?", chunkID); err != nil {
-			return err
-		}
-	}
-
-	if _, err := db.conn.Exec("DELETE FROM chunks WHERE doc_id = ?", docID); err != nil {
+	if err := db.deleteChunksForDocumentTx(tx, docID); err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 
-	_, err = db.conn.Exec("DELETE FROM documents WHERE id = ?", docID)
-	return err
+	if _, err := tx.Exec("DELETE FROM documents WHERE id = ?", docID); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (db *DB) DeleteChunksForDocument(docID int64) error {
-	rows, err := db.conn.Query("SELECT id FROM chunks WHERE doc_id = ?", docID)
+	tx, err := db.conn.Begin()
 	if err != nil {
 		return err
 	}
-	defer rows.Close() //nolint:errcheck
 
-	var chunkIDs []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return err
-		}
-		chunkIDs = append(chunkIDs, id)
+	if err := db.deleteChunksForDocumentTx(tx, docID); err != nil {
+		_ = tx.Rollback()
+		return err
 	}
 
-	for _, chunkID := range chunkIDs {
-		if _, err := db.conn.Exec("DELETE FROM vec_chunks WHERE chunk_id = ?", chunkID); err != nil {
-			return err
-		}
+	return tx.Commit()
+}
+
+func (db *DB) deleteChunksForDocumentTx(tx *sql.Tx, docID int64) error {
+	if _, err := tx.Exec("DELETE FROM vec_chunks WHERE chunk_id IN (SELECT id FROM chunks WHERE doc_id = ?)", docID); err != nil {
+		return err
 	}
 
-	_, err = db.conn.Exec("DELETE FROM chunks WHERE doc_id = ?", docID)
+	_, err := tx.Exec("DELETE FROM chunks WHERE doc_id = ?", docID)
 	return err
 }
 
