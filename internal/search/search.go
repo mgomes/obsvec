@@ -58,16 +58,25 @@ func (s *Searcher) Search(ctx context.Context, query string) ([]Result, error) {
 		return nil, nil
 	}
 
-	docs := make([]string, len(candidates))
-	for i, c := range candidates {
-		docs[i] = c.Content
-	}
+	docs := buildRerankDocs(candidates)
 
 	rerankResults, err := s.cohere.Rerank(ctx, query, docs, rerankTopN)
 	if err != nil {
 		return nil, fmt.Errorf("rerank failed: %w", err)
 	}
 
+	return buildResults(candidates, rerankResults), nil
+}
+
+func buildRerankDocs(candidates []db.ChunkWithScore) []string {
+	docs := make([]string, len(candidates))
+	for i, c := range candidates {
+		docs[i] = c.Content
+	}
+	return docs
+}
+
+func buildResults(candidates []db.ChunkWithScore, rerankResults []cohere.RerankResult) []Result {
 	results := make([]Result, len(rerankResults))
 	for i, rr := range rerankResults {
 		c := candidates[rr.Index]
@@ -83,6 +92,5 @@ func (s *Searcher) Search(ctx context.Context, query string) ([]Result, error) {
 			ChunkID:   c.ID,
 		}
 	}
-
-	return results, nil
+	return results
 }
