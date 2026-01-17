@@ -69,9 +69,9 @@ func (idx *Indexer) Index(ctx context.Context, fullReindex bool, progress Progre
 		return fmt.Errorf("failed to get existing documents: %w", err)
 	}
 
-	existingPaths := make(map[string]bool)
-	for _, doc := range existingDocs {
-		existingPaths[doc.Path] = true
+	existingByPath := make(map[string]*db.Document, len(existingDocs))
+	for i := range existingDocs {
+		existingByPath[existingDocs[i].Path] = &existingDocs[i]
 	}
 
 	currentPaths := make(map[string]bool)
@@ -96,7 +96,7 @@ func (idx *Indexer) Index(ctx context.Context, fullReindex bool, progress Progre
 			progress(Progress{Current: i + 1, Total: len(files), FilePath: filePath, Message: "Checking files..."})
 		}
 
-		needsIndex, err := idx.needsIndexing(filePath, fullReindex)
+		needsIndex, err := idx.needsIndexing(filePath, fullReindex, existingByPath[filePath])
 		if err != nil {
 			return err
 		}
