@@ -48,7 +48,7 @@ func Open(path string, embedDim int) (*DB, error) {
 
 	db := &DB{conn: conn, embedDim: embedDim}
 	if err := db.init(); err != nil {
-		conn.Close()
+		conn.Close() //nolint:errcheck
 		return nil, err
 	}
 
@@ -150,7 +150,7 @@ func (db *DB) DeleteDocument(path string) error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var chunkIDs []int64
 	for rows.Next() {
@@ -180,7 +180,7 @@ func (db *DB) DeleteChunksForDocument(docID int64) error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var chunkIDs []int64
 	for rows.Next() {
@@ -240,7 +240,7 @@ func (db *DB) SearchSimilar(queryEmbedding []byte, limit int) ([]ChunkWithScore,
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var results []ChunkWithScore
 	for rows.Next() {
@@ -269,7 +269,7 @@ func (db *DB) GetAllDocuments() ([]Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var docs []Document
 	for rows.Next() {
@@ -317,7 +317,7 @@ func (db *DB) GetChunksForRerank(chunkIDs []int64) ([]Chunk, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	chunkMap := make(map[int64]Chunk)
 	for rows.Next() {

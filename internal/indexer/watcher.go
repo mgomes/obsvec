@@ -57,7 +57,7 @@ func (w *Watcher) Start(ctx context.Context) error {
 
 func (w *Watcher) Stop() {
 	close(w.stop)
-	w.watcher.Close()
+	w.watcher.Close() //nolint:errcheck
 }
 
 func (w *Watcher) addWatchRecursive(dir string) error {

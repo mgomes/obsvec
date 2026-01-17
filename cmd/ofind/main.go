@@ -54,7 +54,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to open database: %v\n", err)
 		os.Exit(1)
 	}
-	defer database.Close()
+	defer database.Close() //nolint:errcheck
 
 	cohereClient := cohere.NewClient(cfg.CohereAPIKey, cfg.EmbedModel, cfg.RerankModel, cfg.EmbedDim)
 
@@ -103,11 +103,10 @@ func runSetup(cfg *config.Config) error {
 }
 
 type setupRunner struct {
-	setupModel tui.SetupModel
-	cfg        *config.Config
-	apiKey     string
+	setupModel  tui.SetupModel
+	cfg         *config.Config
+	apiKey      string
 	obsidianDir string
-	error      string
 }
 
 func newSetupRunner(cfg *config.Config) setupRunner {

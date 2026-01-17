@@ -86,10 +86,3 @@ func (s *Searcher) Search(ctx context.Context, query string) ([]Result, error) {
 
 	return results, nil
 }
-
-func truncateContent(content string, maxLen int) string {
-	if len(content) <= maxLen {
-		return content
-	}
-	return content[:maxLen-3] + "..."
-}

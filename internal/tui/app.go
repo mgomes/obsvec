@@ -195,6 +195,6 @@ func openInObsidian(vaultDir, filePath string) {
 	}
 
 	if cmd != nil {
-		cmd.Start()
+		_ = cmd.Start()
 	}
 }

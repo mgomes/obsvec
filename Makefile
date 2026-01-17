@@ -1,4 +1,4 @@
-.PHONY: build install clean
+.PHONY: build install clean test
 
 BINARY_NAME=ofind
 BUILD_DIR=./cmd/ofind
@@ -25,3 +25,6 @@ deps:
 
 run:
 	go run $(BUILD_DIR) $(ARGS)
+
+test:
+	go test ./...
