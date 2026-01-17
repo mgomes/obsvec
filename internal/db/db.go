@@ -289,7 +289,7 @@ func (db *DB) GetChunksForRerank(chunkIDs []int64) ([]Chunk, error) {
 	}
 
 	query := "SELECT id, doc_id, content, start_line, end_line, heading FROM chunks WHERE id IN ("
-	args := make([]interface{}, len(chunkIDs))
+	args := make([]any, len(chunkIDs))
 	for i, id := range chunkIDs {
 		if i > 0 {
 			query += ", "
