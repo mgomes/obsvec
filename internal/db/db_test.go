@@ -182,8 +182,8 @@ func TestDocumentCount(t *testing.T) {
 		t.Errorf("expected 0 documents, got %d", count)
 	}
 
-	db.UpsertDocument("a.md", "A", 1000, 2000)
-	db.UpsertDocument("b.md", "B", 1000, 2000)
+	_, _ = db.UpsertDocument("a.md", "A", 1000, 2000)
+	_, _ = db.UpsertDocument("b.md", "B", 1000, 2000)
 
 	count, _ = db.DocumentCount()
 	if count != 2 {
@@ -202,8 +202,8 @@ func TestChunkCount(t *testing.T) {
 		t.Errorf("expected 0 chunks, got %d", count)
 	}
 
-	db.InsertChunk(docID, "Chunk 1", 1, 5, "")
-	db.InsertChunk(docID, "Chunk 2", 6, 10, "")
+	_, _ = db.InsertChunk(docID, "Chunk 1", 1, 5, "")
+	_, _ = db.InsertChunk(docID, "Chunk 2", 6, 10, "")
 
 	count, _ = db.ChunkCount()
 	if count != 2 {
@@ -215,9 +215,9 @@ func TestGetAllDocuments(t *testing.T) {
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
 
-	db.UpsertDocument("a.md", "A", 1000, 2000)
-	db.UpsertDocument("b.md", "B", 1000, 2000)
-	db.UpsertDocument("c.md", "C", 1000, 2000)
+	_, _ = db.UpsertDocument("a.md", "A", 1000, 2000)
+	_, _ = db.UpsertDocument("b.md", "B", 1000, 2000)
+	_, _ = db.UpsertDocument("c.md", "C", 1000, 2000)
 
 	docs, err := db.GetAllDocuments()
 	if err != nil {

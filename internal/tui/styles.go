@@ -7,9 +7,6 @@ var (
 			Bold(true).
 			Foreground(lipgloss.Color("99"))
 
-	headerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
-
 	activeStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("86"))
 
@@ -37,9 +34,4 @@ var (
 
 	snippetStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("250"))
-
-	inputStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("63")).
-			Padding(0, 1)
 )
