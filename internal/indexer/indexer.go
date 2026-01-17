@@ -158,13 +158,13 @@ func (idx *Indexer) findMarkdownFiles() ([]string, error) {
 		}
 
 		if info.IsDir() {
-			if strings.HasPrefix(info.Name(), ".") {
+			if isHiddenDir(info.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if strings.HasSuffix(strings.ToLower(info.Name()), ".md") {
+		if isMarkdownFile(info.Name()) {
 			relPath, err := filepath.Rel(idx.dir, path)
 			if err != nil {
 				return err

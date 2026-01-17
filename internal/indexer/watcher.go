@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -67,7 +66,7 @@ func (w *Watcher) addWatchRecursive(dir string) error {
 		}
 
 		if info.IsDir() {
-			if strings.HasPrefix(info.Name(), ".") {
+			if isHiddenDir(info.Name()) {
 				return filepath.SkipDir
 			}
 			return w.watcher.Add(path)
@@ -99,7 +98,7 @@ func (w *Watcher) processEvents(ctx context.Context) {
 }
 
 func (w *Watcher) handleEvent(event fsnotify.Event) {
-	if !strings.HasSuffix(strings.ToLower(event.Name), ".md") {
+	if !isMarkdownFile(event.Name) {
 		return
 	}
 
@@ -108,7 +107,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		return
 	}
 
-	if strings.HasPrefix(relPath, ".") {
+	if isHiddenRelPath(relPath) {
 		return
 	}
 
