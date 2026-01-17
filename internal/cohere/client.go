@@ -2,6 +2,7 @@ package cohere
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	cohere "github.com/cohere-ai/cohere-go/v2"
@@ -47,28 +48,18 @@ func (c *Client) EmbedDocuments(ctx context.Context, texts []string) ([]Embeddin
 		return nil, nil
 	}
 
-	embeddingTypes := []cohere.EmbeddingType{cohere.EmbeddingTypeFloat}
-	outputDim := c.embedDim
-
-	resp, err := c.client.V2.Embed(ctx, &cohere.V2EmbedRequest{
-		Texts:           texts,
-		Model:           c.embedModel,
-		InputType:       cohere.EmbedInputTypeSearchDocument,
-		EmbeddingTypes:  embeddingTypes,
-		OutputDimension: &outputDim,
-	})
+	embeddings, err := c.embed(ctx, texts, cohere.EmbedInputTypeSearchDocument)
 	if err != nil {
+		if errors.Is(err, errNoEmbeddings) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("embed request failed: %w", err)
 	}
 
-	if resp.Embeddings == nil || resp.Embeddings.Float == nil {
-		return nil, fmt.Errorf("no embeddings returned")
-	}
-
-	results := make([]EmbeddingResult, len(resp.Embeddings.Float))
-	for i, emb := range resp.Embeddings.Float {
+	results := make([]EmbeddingResult, len(embeddings))
+	for i, emb := range embeddings {
 		results[i] = EmbeddingResult{
-			Embedding: float64sToFloat32s(emb),
+			Embedding: emb,
 		}
 	}
 
@@ -76,25 +67,19 @@ func (c *Client) EmbedDocuments(ctx context.Context, texts []string) ([]Embeddin
 }
 
 func (c *Client) EmbedQuery(ctx context.Context, query string) ([]float32, error) {
-	embeddingTypes := []cohere.EmbeddingType{cohere.EmbeddingTypeFloat}
-	outputDim := c.embedDim
-
-	resp, err := c.client.V2.Embed(ctx, &cohere.V2EmbedRequest{
-		Texts:           []string{query},
-		Model:           c.embedModel,
-		InputType:       cohere.EmbedInputTypeSearchQuery,
-		EmbeddingTypes:  embeddingTypes,
-		OutputDimension: &outputDim,
-	})
+	embeddings, err := c.embed(ctx, []string{query}, cohere.EmbedInputTypeSearchQuery)
 	if err != nil {
+		if errors.Is(err, errNoEmbeddings) {
+			return nil, fmt.Errorf("no embedding returned")
+		}
 		return nil, fmt.Errorf("embed query failed: %w", err)
 	}
 
-	if resp.Embeddings == nil || resp.Embeddings.Float == nil || len(resp.Embeddings.Float) == 0 {
+	if len(embeddings) == 0 {
 		return nil, fmt.Errorf("no embedding returned")
 	}
 
-	return float64sToFloat32s(resp.Embeddings.Float[0]), nil
+	return embeddings[0], nil
 }
 
 func (c *Client) Rerank(ctx context.Context, query string, documents []string, topN int) ([]RerankResult, error) {
@@ -129,4 +114,37 @@ func float64sToFloat32s(f64s []float64) []float32 {
 		f32s[i] = float32(v)
 	}
 	return f32s
+}
+
+var errNoEmbeddings = errors.New("no embeddings returned")
+
+func (c *Client) embed(ctx context.Context, texts []string, inputType cohere.EmbedInputType) ([][]float32, error) {
+	if len(texts) == 0 {
+		return nil, nil
+	}
+
+	embeddingTypes := []cohere.EmbeddingType{cohere.EmbeddingTypeFloat}
+	outputDim := c.embedDim
+
+	resp, err := c.client.V2.Embed(ctx, &cohere.V2EmbedRequest{
+		Texts:           texts,
+		Model:           c.embedModel,
+		InputType:       inputType,
+		EmbeddingTypes:  embeddingTypes,
+		OutputDimension: &outputDim,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Embeddings == nil || resp.Embeddings.Float == nil {
+		return nil, errNoEmbeddings
+	}
+
+	results := make([][]float32, len(resp.Embeddings.Float))
+	for i, emb := range resp.Embeddings.Float {
+		results[i] = float64sToFloat32s(emb)
+	}
+
+	return results, nil
 }
