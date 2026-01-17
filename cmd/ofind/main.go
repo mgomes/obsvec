@@ -32,10 +32,9 @@ func main() {
 	}
 
 	if *doSetup || cfg.CohereAPIKey == "" {
-		if err := runSetup(cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Setup failed: %v\n", err)
-			os.Exit(1)
-		}
+		runOrExit("Setup failed", func() error {
+			return runSetup(cfg)
+		})
 	}
 
 	if cfg.CohereAPIKey == "" || cfg.ObsidianDir == "" {
@@ -60,25 +59,29 @@ func main() {
 
 	switch {
 	case *doIndex:
-		if err := runIndex(database, cohereClient, cfg, *fullReindex); err != nil {
-			fmt.Fprintf(os.Stderr, "Indexing failed: %v\n", err)
-			os.Exit(1)
-		}
+		runOrExit("Indexing failed", func() error {
+			return runIndex(database, cohereClient, cfg, *fullReindex)
+		})
 
 	case *doWatch:
-		if err := runWatch(database, cohereClient, cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Watch mode failed: %v\n", err)
-			os.Exit(1)
-		}
+		runOrExit("Watch mode failed", func() error {
+			return runWatch(database, cohereClient, cfg)
+		})
 
 	case *query != "":
-		if err := runSearch(database, cohereClient, cfg, *query); err != nil {
-			fmt.Fprintf(os.Stderr, "Search failed: %v\n", err)
-			os.Exit(1)
-		}
+		runOrExit("Search failed", func() error {
+			return runSearch(database, cohereClient, cfg, *query)
+		})
 
 	default:
 		printUsage()
+	}
+}
+
+func runOrExit(prefix string, fn func() error) {
+	if err := fn(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %v\n", prefix, err)
+		os.Exit(1)
 	}
 }
 
