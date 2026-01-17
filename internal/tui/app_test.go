@@ -78,24 +78,3 @@ func TestWrapText_WhitespaceCollapsed(t *testing.T) {
 		t.Errorf("expected whitespace to be collapsed, got '%s'", lines[0])
 	}
 }
-
-func TestTruncate_ShortString(t *testing.T) {
-	result := truncate("Hello", 10)
-	if result != "Hello" {
-		t.Errorf("expected 'Hello', got '%s'", result)
-	}
-}
-
-func TestTruncate_LongString(t *testing.T) {
-	result := truncate("Hello World", 8)
-	if result != "Hello..." {
-		t.Errorf("expected 'Hello...', got '%s'", result)
-	}
-}
-
-func TestTruncate_NewlinesReplaced(t *testing.T) {
-	result := truncate("Hello\nWorld", 20)
-	if strings.Contains(result, "\n") {
-		t.Error("expected newlines to be replaced")
-	}
-}

@@ -121,15 +121,6 @@ func (m SearchModel) View() string {
 	return b.String()
 }
 
-func truncate(s string, max int) string {
-	s = strings.ReplaceAll(s, "\n", " ")
-	s = strings.TrimSpace(s)
-	if len(s) <= max {
-		return s
-	}
-	return s[:max-3] + "..."
-}
-
 func wrapText(s string, width, maxLines int) []string {
 	// Clean up the text
 	s = strings.ReplaceAll(s, "\n", " ")
