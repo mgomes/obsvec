@@ -139,46 +139,15 @@ func (idx *Indexer) Index(ctx context.Context, fullReindex bool, progress Progre
 	}
 
 	// Phase 2: Batch embed all chunks across files
-	totalBatches := (len(allPending) + batchSize - 1) / batchSize
-	for i := 0; i < len(allPending); i += batchSize {
-		end := i + batchSize
-		if end > len(allPending) {
-			end = len(allPending)
-		}
-		batch := allPending[i:end]
-		batchNum := (i / batchSize) + 1
-
+	return idx.embedPending(ctx, allPending, func(batchNum, totalBatches, batchLen int) {
 		if progress != nil {
 			progress(Progress{
 				Current: batchNum,
 				Total:   totalBatches,
-				Message: fmt.Sprintf("Embedding batch %d/%d (%d chunks)", batchNum, totalBatches, len(batch)),
+				Message: fmt.Sprintf("Embedding batch %d/%d (%d chunks)", batchNum, totalBatches, batchLen),
 			})
 		}
-
-		texts := make([]string, len(batch))
-		for j, p := range batch {
-			texts[j] = p.content
-		}
-
-		embeddings, err := idx.cohere.EmbedDocuments(ctx, texts)
-		if err != nil {
-			return fmt.Errorf("failed to generate embeddings for batch %d: %w", batchNum, err)
-		}
-
-		for j, p := range batch {
-			embBytes, err := sqlite_vec.SerializeFloat32(embeddings[j].Embedding)
-			if err != nil {
-				return fmt.Errorf("failed to serialize embedding: %w", err)
-			}
-
-			if err := idx.db.InsertEmbedding(p.chunkID, embBytes); err != nil {
-				return fmt.Errorf("failed to insert embedding: %w", err)
-			}
-		}
-	}
-
-	return nil
+	})
 }
 
 func (idx *Indexer) findMarkdownFiles() ([]string, error) {
@@ -209,14 +178,9 @@ func (idx *Indexer) findMarkdownFiles() ([]string, error) {
 	return files, err
 }
 
-func (idx *Indexer) needsIndexing(relPath string, fullReindex bool) (bool, error) {
+func (idx *Indexer) needsIndexing(relPath string, fullReindex bool, doc *db.Document) (bool, error) {
 	if fullReindex {
 		return true, nil
-	}
-
-	doc, err := idx.db.GetDocument(relPath)
-	if err != nil {
-		return false, err
 	}
 
 	if doc == nil {
@@ -284,16 +248,28 @@ func (idx *Indexer) indexFile(ctx context.Context, relPath string) error {
 		return err
 	}
 
+	return idx.embedPending(ctx, pending, nil)
+}
+
+type batchProgressFunc func(batchNum, totalBatches, batchLen int)
+
+func (idx *Indexer) embedPending(ctx context.Context, pending []pendingChunk, onBatch batchProgressFunc) error {
 	if len(pending) == 0 {
 		return nil
 	}
 
+	totalBatches := (len(pending) + batchSize - 1) / batchSize
 	for i := 0; i < len(pending); i += batchSize {
 		end := i + batchSize
 		if end > len(pending) {
 			end = len(pending)
 		}
 		batch := pending[i:end]
+		batchNum := (i / batchSize) + 1
+
+		if onBatch != nil {
+			onBatch(batchNum, totalBatches, len(batch))
+		}
 
 		texts := make([]string, len(batch))
 		for j, p := range batch {
@@ -302,7 +278,7 @@ func (idx *Indexer) indexFile(ctx context.Context, relPath string) error {
 
 		embeddings, err := idx.cohere.EmbedDocuments(ctx, texts)
 		if err != nil {
-			return fmt.Errorf("failed to generate embeddings: %w", err)
+			return fmt.Errorf("failed to generate embeddings for batch %d: %w", batchNum, err)
 		}
 
 		for j, p := range batch {
@@ -312,7 +288,7 @@ func (idx *Indexer) indexFile(ctx context.Context, relPath string) error {
 			}
 
 			if err := idx.db.InsertEmbedding(p.chunkID, embBytes); err != nil {
-				return err
+				return fmt.Errorf("failed to insert embedding: %w", err)
 			}
 		}
 	}
