@@ -1,7 +1,6 @@
 package indexer
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -209,7 +208,7 @@ func (idx *Indexer) parseFile(relPath string) ([]pendingChunk, error) {
 		return nil, err
 	}
 
-	title := extractTitle(string(content), relPath)
+	title, chunks := parseMarkdown(string(content), relPath)
 
 	docID, err := idx.db.UpsertDocument(relPath, title, info.ModTime().Unix(), time.Now().Unix())
 	if err != nil {
@@ -219,8 +218,6 @@ func (idx *Indexer) parseFile(relPath string) ([]pendingChunk, error) {
 	if err := idx.db.DeleteChunksForDocument(docID); err != nil {
 		return nil, err
 	}
-
-	chunks := chunkMarkdown(string(content))
 
 	if len(chunks) == 0 {
 		return nil, nil
@@ -296,20 +293,7 @@ func (idx *Indexer) embedPending(ctx context.Context, pending []pendingChunk, on
 	return nil
 }
 
-func extractTitle(content, relPath string) string {
-	scanner := bufio.NewScanner(strings.NewReader(content))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "# ") {
-			return strings.TrimPrefix(line, "# ")
-		}
-	}
-
-	base := filepath.Base(relPath)
-	return strings.TrimSuffix(base, filepath.Ext(base))
-}
-
-func chunkMarkdown(content string) []Chunk {
+func parseMarkdown(content, relPath string) (string, []Chunk) {
 	lines := strings.Split(content, "\n")
 	var chunks []Chunk
 	var currentChunk strings.Builder
@@ -317,6 +301,7 @@ func chunkMarkdown(content string) []Chunk {
 	var headingStack []string
 	startLine := 1
 	currentLine := 1
+	var title string
 
 	flushChunk := func() {
 		text := strings.TrimSpace(currentChunk.String())
@@ -333,6 +318,13 @@ func chunkMarkdown(content string) []Chunk {
 	}
 
 	for _, line := range lines {
+		if title == "" {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "# ") {
+				title = strings.TrimPrefix(trimmed, "# ")
+			}
+		}
+
 		if match := headingRegex.FindStringSubmatch(line); match != nil {
 			flushChunk()
 
@@ -360,5 +352,15 @@ func chunkMarkdown(content string) []Chunk {
 
 	flushChunk()
 
+	if title == "" && relPath != "" {
+		base := filepath.Base(relPath)
+		title = strings.TrimSuffix(base, filepath.Ext(base))
+	}
+
+	return title, chunks
+}
+
+func chunkMarkdown(content string) []Chunk {
+	_, chunks := parseMarkdown(content, "")
 	return chunks
 }

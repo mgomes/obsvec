@@ -102,13 +102,7 @@ func (db *DB) GetDocument(path string) (*Document, error) {
 		"SELECT id, path, title, modified_at, indexed_at FROM documents WHERE path = ?",
 		path,
 	).Scan(&doc.ID, &doc.Path, &doc.Title, &doc.ModifiedAt, &doc.IndexedAt)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &doc, nil
+	return scanOptional(err, &doc)
 }
 
 func (db *DB) UpsertDocument(path, title string, modifiedAt, indexedAt int64) (int64, error) {
@@ -274,13 +268,7 @@ func (db *DB) GetChunk(id int64) (*Chunk, error) {
 		"SELECT id, doc_id, content, start_line, end_line, heading FROM chunks WHERE id = ?",
 		id,
 	).Scan(&chunk.ID, &chunk.DocID, &chunk.Content, &chunk.StartLine, &chunk.EndLine, &chunk.Heading)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &chunk, nil
+	return scanOptional(err, &chunk)
 }
 
 func (db *DB) GetChunksForRerank(chunkIDs []int64) ([]Chunk, error) {
@@ -334,4 +322,14 @@ func (db *DB) ChunkCount() (int, error) {
 	var count int
 	err := db.conn.QueryRow("SELECT COUNT(*) FROM chunks").Scan(&count)
 	return count, err
+}
+
+func scanOptional[T any](err error, value *T) (*T, error) {
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
 }

@@ -87,9 +87,7 @@ func runOrExit(prefix string, fn func() error) {
 
 func runSetup(cfg *config.Config) error {
 	model := newSetupRunner(cfg)
-	program := tea.NewProgram(model)
-
-	finalModel, err := program.Run()
+	finalModel, err := runTeaProgram(model, nil)
 	if err != nil {
 		return err
 	}
@@ -241,18 +239,8 @@ func runSearch(database *db.DB, cohereClient *cohere.Client, cfg *config.Config,
 	initCmd := func() tea.Msg {
 		return tui.SearchResultsMsg{Results: tuiResults}
 	}
-
-	program := tea.NewProgram(model)
-
-	go func() {
-		program.Send(initCmd())
-	}()
-
-	if _, err := program.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = runTeaProgram(model, initCmd)
+	return err
 }
 
 func printUsage() {
@@ -265,4 +253,14 @@ func printUsage() {
 	fmt.Println("  ofind -watch              Watch for changes and auto-index")
 	fmt.Println("  ofind -setup              Run setup wizard")
 	fmt.Println()
+}
+
+func runTeaProgram(model tea.Model, initCmd tea.Cmd) (tea.Model, error) {
+	program := tea.NewProgram(model)
+	if initCmd != nil {
+		go func() {
+			program.Send(initCmd())
+		}()
+	}
+	return program.Run()
 }

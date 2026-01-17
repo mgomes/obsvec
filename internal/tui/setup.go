@@ -99,11 +99,7 @@ func (m SetupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		if m.focus == 0 {
-			m.apiKeyInput, cmd = m.apiKeyInput.Update(msg)
-		} else {
-			m.dirInput, cmd = m.dirInput.Update(msg)
-		}
+		m, cmd = m.updateFocusedInput(msg)
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -113,13 +109,19 @@ func (m SetupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.error = msg.Error
 
 	default:
-		if m.focus == 0 {
-			m.apiKeyInput, cmd = m.apiKeyInput.Update(msg)
-		} else {
-			m.dirInput, cmd = m.dirInput.Update(msg)
-		}
+		m, cmd = m.updateFocusedInput(msg)
 	}
 
+	return m, cmd
+}
+
+func (m SetupModel) updateFocusedInput(msg tea.Msg) (SetupModel, tea.Cmd) {
+	var cmd tea.Cmd
+	if m.focus == 0 {
+		m.apiKeyInput, cmd = m.apiKeyInput.Update(msg)
+	} else {
+		m.dirInput, cmd = m.dirInput.Update(msg)
+	}
 	return m, cmd
 }
 

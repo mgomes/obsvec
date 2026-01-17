@@ -138,33 +138,33 @@ Hi
 	}
 }
 
-func TestExtractTitle_WithH1(t *testing.T) {
+func TestParseMarkdown_TitleWithH1(t *testing.T) {
 	content := `# My Document Title
 
 Some content here.
 `
 
-	title := extractTitle(content, "fallback.md")
+	title, _ := parseMarkdown(content, "fallback.md")
 
 	if title != "My Document Title" {
 		t.Errorf("expected 'My Document Title', got '%s'", title)
 	}
 }
 
-func TestExtractTitle_NoH1(t *testing.T) {
+func TestParseMarkdown_TitleNoH1(t *testing.T) {
 	content := `Some content without a title.
 
 ## Section
 `
 
-	title := extractTitle(content, "my-note.md")
+	title, _ := parseMarkdown(content, "my-note.md")
 
 	if title != "my-note" {
 		t.Errorf("expected 'my-note', got '%s'", title)
 	}
 }
 
-func TestExtractTitle_H1NotFirst(t *testing.T) {
+func TestParseMarkdown_TitleH1NotFirst(t *testing.T) {
 	content := `Some preamble text.
 
 # Actual Title
@@ -172,7 +172,7 @@ func TestExtractTitle_H1NotFirst(t *testing.T) {
 Content.
 `
 
-	title := extractTitle(content, "fallback.md")
+	title, _ := parseMarkdown(content, "fallback.md")
 
 	// extractTitle finds first H1, even if not on first line
 	if title != "Actual Title" {
