@@ -81,16 +81,7 @@ func TestConfigDefaultsApplied(t *testing.T) {
 		// Leave other fields as zero values
 	}
 
-	// Simulate the default-applying logic from Load()
-	if cfg.EmbedModel == "" {
-		cfg.EmbedModel = "embed-v4.0"
-	}
-	if cfg.RerankModel == "" {
-		cfg.RerankModel = "rerank-v3.5"
-	}
-	if cfg.EmbedDim == 0 {
-		cfg.EmbedDim = 1024
-	}
+	cfg.ApplyDefaults()
 
 	if cfg.EmbedModel != "embed-v4.0" {
 		t.Errorf("expected default embed model, got '%s'", cfg.EmbedModel)

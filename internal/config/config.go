@@ -57,15 +57,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.EmbedModel == "" {
-		cfg.EmbedModel = "embed-v4.0"
-	}
-	if cfg.RerankModel == "" {
-		cfg.RerankModel = "rerank-v3.5"
-	}
-	if cfg.EmbedDim == 0 {
-		cfg.EmbedDim = 1024
-	}
+	cfg.ApplyDefaults()
 
 	return &cfg, nil
 }
@@ -95,9 +87,19 @@ func (c *Config) Save() error {
 }
 
 func defaultConfig() *Config {
-	return &Config{
-		EmbedModel:  "embed-v4.0",
-		RerankModel: "rerank-v3.5",
-		EmbedDim:    1024,
+	cfg := &Config{}
+	cfg.ApplyDefaults()
+	return cfg
+}
+
+func (c *Config) ApplyDefaults() {
+	if c.EmbedModel == "" {
+		c.EmbedModel = "embed-v4.0"
+	}
+	if c.RerankModel == "" {
+		c.RerankModel = "rerank-v3.5"
+	}
+	if c.EmbedDim == 0 {
+		c.EmbedDim = 1024
 	}
 }
