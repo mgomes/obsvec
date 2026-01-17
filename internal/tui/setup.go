@@ -17,23 +17,28 @@ type SetupModel struct {
 	height      int
 }
 
+const inputWidth = 60
+
 func NewSetupModel() SetupModel {
-	apiKey := textinput.New()
-	apiKey.Placeholder = "Paste your Cohere API key here..."
+	apiKey := newSetupInput("Paste your Cohere API key here...")
 	apiKey.Focus()
-	apiKey.Width = 60
 	apiKey.EchoMode = textinput.EchoPassword
 	apiKey.EchoCharacter = '•'
 
-	dirInput := textinput.New()
-	dirInput.Placeholder = "/path/to/your/obsidian/vault"
-	dirInput.Width = 60
+	dirInput := newSetupInput("/path/to/your/obsidian/vault")
 
 	return SetupModel{
 		apiKeyInput: apiKey,
 		dirInput:    dirInput,
 		focus:       0,
 	}
+}
+
+func newSetupInput(placeholder string) textinput.Model {
+	input := textinput.New()
+	input.Placeholder = placeholder
+	input.Width = inputWidth
+	return input
 }
 
 func (m SetupModel) Init() tea.Cmd {

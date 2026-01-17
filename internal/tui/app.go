@@ -122,15 +122,7 @@ func (m SearchModel) View() string {
 }
 
 func wrapText(s string, width, maxLines int) []string {
-	// Clean up the text
-	s = strings.ReplaceAll(s, "\n", " ")
-	s = strings.ReplaceAll(s, "\t", " ")
-	s = strings.TrimSpace(s)
-
-	// Collapse multiple spaces
-	for strings.Contains(s, "  ") {
-		s = strings.ReplaceAll(s, "  ", " ")
-	}
+	s = normalizeWhitespace(s)
 
 	if len(s) == 0 {
 		return nil
@@ -166,6 +158,14 @@ func wrapText(s string, width, maxLines int) []string {
 	}
 
 	return lines
+}
+
+func normalizeWhitespace(s string) string {
+	fields := strings.Fields(s)
+	if len(fields) == 0 {
+		return ""
+	}
+	return strings.Join(fields, " ")
 }
 
 func openInObsidian(vaultDir, filePath string) {
